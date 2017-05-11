@@ -18,11 +18,11 @@ int main(int argc, char *argv[]){
     ludo_player_random p3, p4;
     ludo_player_qlearning p1;
    
-    p1.create_new_neural_network();
-    p1.train_neural_network();
+    //p1.create_new_neural_network();
+    //p1.train_neural_network();
 
     game g;
-    g.setGameDelay(300); //if you want to see the game, set a delay
+    g.setGameDelay(1000); //if you want to see the game, set a delay
 
     /* Add a GUI <-- remove the '/' to uncomment block
     */Dialog w;

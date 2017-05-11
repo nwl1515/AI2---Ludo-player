@@ -14,31 +14,63 @@ private:
     std::vector<int> pos_end_of_turn;
     int dice_roll;
     int make_decision();
+	int make_decision_qlearning();
     fann_type learning_rate;
     fann_type exploring_rate;
     fann_type discount_factor;
     struct fann *q_approximator;
 
     fann_type calc_reward();			///
-    fann_type is_home(int pos);  // bool		///
-    fann_type safe_now(int pos);			///
-    fann_type safe_next(int pos);			///
-    fann_type kill_next(int pos);			///
-    fann_type defender_now(int pos); //bool	///
-    fann_type defender_next(int pos); //bool	///
-    fann_type finish_area(int pos); //bool		///
-    fann_type distance_to_finish(int pos);		///
 
-    std::vector<fann_type> feature_values(int pos);	///
-    std::vector<fann_type> selected_feature_values;	
-    fann_type selected_qvalue;
+
+	// General representation
+	fann_type num_home();
+	fann_type num_finished();
+	
+	// Specific for each piece
+    fann_type is_home(int a_pos);
+    fann_type safe_now(int a_pos);			//
+    fann_type defender_now(int a_pos, int pos, std::vector<int> current_pos);
+    fann_type finish_area(int a_pos);
+    fann_type distance_to_finish_now(int a_pos);
+    fann_type distance_to_enemy_behind(int a_pos);
+    fann_type distance_to_enemy_front(int a_pos);
+
+	// not used
+    fann_type safe_next(int pos);			//
+    fann_type defender_next(int pos);	
+    fann_type distance_to_finish_next(int pos);	
+
+
+
+    std::vector<fann_type> feature_values();
+	std::vector<fann_type> feature_values_next(int pos);
+    //std::vector<fann_type> feature_values(int pos);
+    std::vector<fann_type> state; 
+	std::vector<fann_type> old_state;
+	std::vector<int> old_pos;
+	fann_type reward = 0;	
+	bool killed_player = false;
+
+	
+    fann_type old_qvalue;
     fann_type approximate_qvalue(int pos);			///
-    std::vector<int> possible_actions();		///
-    int find_best_action();				///
+    std::vector<int> possible_actions();
+    int find_best_action(std::vector<int> actions);				///
+
+    bool die_next(int a_pos);		
+    bool kill_next(int a_pos);		
+    int pos_next(int pos, int dice);
+    int globe_pos(int a_pos);
+    int friends_on_pos(int a_pos);
+    int enemy_on_pos(int a_pos);
 
     unsigned int num_train_data = 0;
     fann_type ** input_data;
     fann_type ** output_data;
+
+
+    void print_player_pos();
 
 
 public:
@@ -48,7 +80,7 @@ public:
     void train_neural_network();
     
     
-    
+	    
 
 
 
