@@ -15,17 +15,16 @@ int main(int argc, char *argv[]){
 
     //instanciate the players here
     ludo_player p2;
-    ludo_player_random p3, p4;
+    ludo_player p3, p4;
     ludo_player_qlearning p1;
    
-    //p1.create_new_neural_network();
-    //p1.train_neural_network();
+
 
     game g;
-    g.setGameDelay(1000); //if you want to see the game, set a delay
+    g.setGameDelay(00); //if you want to see the game, set a delay
 
     /* Add a GUI <-- remove the '/' to uncomment block
-    */Dialog w;
+    *Dialog w;
     QObject::connect(&g,SIGNAL(update_graphics(std::vector<int>)),&w,SLOT(update_graphics(std::vector<int>)));
     QObject::connect(&g,SIGNAL(set_color(int)),                   &w,SLOT(get_color(int)));
     QObject::connect(&g,SIGNAL(set_dice_result(int)),             &w,SLOT(get_dice_result(int)));
@@ -57,10 +56,50 @@ int main(int argc, char *argv[]){
     QObject::connect(&g, SIGNAL(player4_end(std::vector<int>)),    &p4,SLOT(post_game_analysis(std::vector<int>)));
     QObject::connect(&p4,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
 
-    for(int i = 0; i < 10000; ++i){
-        g.start();
-        a.exec();
-        g.reset();
-    }
+    p1.create_new_neural_network();
+
+
+    for(int i = 0; i < 20000; ++i)
+    {
+	p1.training = true;
+	for(int j = 0; j<1;j++)
+	{        
+		g.start();
+		a.exec();
+		while (a.closingDown())
+		{
+			std::cout << "Closing Down" << std::endl;
+		}
+
+		g.reset();
+		if(g.wait()){}
+		p1.reset_states();
+	}
+	p1.train_neural_network();
+	std::cout << "Training: " << i+1 << "complete out of 20000" << std::endl;
+
+
+	
+		
+	
+	
+     }
+
+	p1.wins = 0;
+	p1.training = false;
+	for(int j = 0; j< 1000; j++)
+	{
+		g.start();
+		a.exec();
+		while (a.closingDown())
+		{
+			std::cout << "Closing Down" << std::endl;
+		}
+		g.reset();
+		if(g.wait()){}
+		p1.reset_states();
+
+	}
+	std::cout << "Number of wins: " << p1.wins << " out of 10000." << std::endl; 
     return 0;
 }

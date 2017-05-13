@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include "positions_and_dice.h"
-#include "doublefann.h"
+#include "fann.h"
 
 
 class ludo_player_qlearning : public QObject {
@@ -15,12 +15,12 @@ private:
     int dice_roll;
     int make_decision();
 	int make_decision_qlearning();
-    fann_type learning_rate;
-    fann_type exploring_rate;
-    fann_type discount_factor;
+    fann_type learning_rate = 0.99;
+    fann_type exploring_rate = 0.1;
+    fann_type discount_factor = 0.9;
     struct fann *q_approximator;
 
-    fann_type calc_reward();			///
+    fann_type calc_reward();		
 
 
 	// General representation
@@ -54,9 +54,9 @@ private:
 
 	
     fann_type old_qvalue;
-    fann_type approximate_qvalue(int pos);			///
+    fann_type q_approx(std::vector<fann_type> inputs);
     std::vector<int> possible_actions();
-    int find_best_action(std::vector<int> actions);				///
+    int find_best_action(std::vector<int> actions, fann_type &max);
 
     bool die_next(int a_pos);		
     bool kill_next(int a_pos);		
@@ -65,7 +65,8 @@ private:
     int friends_on_pos(int a_pos);
     int enemy_on_pos(int a_pos);
 
-    unsigned int num_train_data = 0;
+
+    struct fann_train_data *training_data;
     fann_type ** input_data;
     fann_type ** output_data;
 
@@ -78,6 +79,11 @@ public:
     void load_neural_network(std::string path);
     void create_new_neural_network();
     void train_neural_network();
+    void reset_states();
+
+    bool training = false;
+    int wins = 0;
+    unsigned int num_train_data = 0;
     
     
 	    
