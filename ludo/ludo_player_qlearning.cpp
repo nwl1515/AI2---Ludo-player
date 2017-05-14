@@ -139,6 +139,15 @@ fann_type ludo_player_qlearning::is_home(int a_pos)
 
 }
 
+fann_type ludo_player_qlearning::is_finished(int a_pos)
+{
+	if(a_pos == 99)
+		return 1.0;
+	else
+		return 0.0;
+
+}
+
 fann_type ludo_player_qlearning::finish_area(int a_pos)
 {
 	if(a_pos >= 51 && a_pos <= 55)
@@ -443,12 +452,13 @@ std::vector<fann_type> ludo_player_qlearning::feature_values()
 	for(int i = 0; i< 4; i++)
 	{
 		int a_pos = pos_start_of_turn[i];
-		res.push_back(0);//is_home(a_pos));
+		res.push_back(is_home(a_pos));
 		res.push_back(0);//safe_now(a_pos));
-		res.push_back(defender_now(a_pos, i, pos_start_of_turn));
+		//res.push_back(is_finished(a_pos));
+		res.push_back(0);//defender_now(a_pos, i, pos_start_of_turn));
 		res.push_back(0);//distance_to_finish_now(a_pos));
 		res.push_back(0);//distance_to_enemy_behind(a_pos));
-		res.push_back(0);//distance_to_enemy_front(a_pos));
+		res.push_back(distance_to_enemy_front(a_pos));
 
 
 	}
@@ -629,7 +639,7 @@ int ludo_player_qlearning::find_best_action(std::vector<int> actions, fann_type 
 		std::vector<fann_type> input_vec = feature_values_next(actions.at(i));
 
 		fann_type q_value = q_approx(input_vec);
-		std::cout << "Q_value for player: " << actions.at(i) << " is " << q_value << std::endl;
+		//std::cout << "Q_value for player: " << actions.at(i) << " is " << q_value << std::endl;
 		if(q_value > max)
 		{
 			
@@ -658,7 +668,9 @@ fann_type ludo_player_qlearning::q_approx(std::vector<fann_type> inputs)
 
 	fann_type *q_value = fann_run(q_approximator, input);
 	fann_type res = q_value[0];
-	std::cout << "q_value: " << res << std::endl;
+	//std::cout << "q_value: " << res << std::endl;
+	if(std::isnan(res))
+		std::cout << "Q-value is nan!" << std::endl;
 	//delete[] q_value;
 	return res;
 
@@ -672,7 +684,7 @@ int ludo_player_qlearning::make_decision_qlearning()
 	std::vector<int> pos_actions = possible_actions();
 	fann_type max = -1000000000;
 
-	print_player_pos();
+	//print_player_pos();
 	//std::cout << "Feature values for Player 1:" << std::endl;
 	//for(int i = 0; i< state.size(); i++)
 	//	std::cout << state.at(i) << std::endl;
@@ -733,8 +745,8 @@ int ludo_player_qlearning::make_decision_qlearning()
 		}
 	}
 
-	std::cout << "Selected action: " << action << std::endl;
-	std::cout << std::endl;
+	//std::cout << "Selected action: " << action << std::endl;
+	//std::cout << std::endl;
 	return action;
 
 }
@@ -742,7 +754,7 @@ int ludo_player_qlearning::make_decision_qlearning()
 int ludo_player_qlearning::make_decision(){
 	print_player_pos();
 	std::vector<fann_type> fv = feature_values();
-	std::cout << "Feature values for Player 1:" << std::endl;
+	//std::cout << "Feature values for Player 1:" << std::endl;
 	for(int i = 0; i< fv.size(); i++)
 		std::cout << fv.at(i) << std::endl;
 

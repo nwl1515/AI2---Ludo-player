@@ -29,6 +29,7 @@ private:
 	
 	// Specific for each piece
     fann_type is_home(int a_pos);
+    fann_type is_finished(int a_pos);
     fann_type safe_now(int a_pos);			//
     fann_type defender_now(int a_pos, int pos, std::vector<int> current_pos);
     fann_type finish_area(int a_pos);
