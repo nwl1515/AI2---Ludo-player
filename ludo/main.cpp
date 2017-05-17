@@ -59,10 +59,10 @@ int main(int argc, char *argv[]){
     p1.create_new_neural_network();
 
 
-    for(int i = 0; i < 20000; ++i)
+    for(int i = 0; i < 100; ++i)
     {
 	p1.training = true;
-	for(int j = 0; j<1;j++)
+	for(int j = 0; j<50;j++)
 	{        
 		g.start();
 		a.exec();
@@ -76,16 +76,16 @@ int main(int argc, char *argv[]){
 		p1.reset_states();
 	}
 	p1.train_neural_network();
-	std::cout << "Training: " << i+1 << "complete out of 20000" << std::endl;
+	std::cout << "Training: " << i+1 << " complete out of 1000" << std::endl;
 
-
+	
 	
 		
 	
 	
      }
 
-	p1.wins = 0;
+p1.wins = 0;
 	p1.training = false;
 	for(int j = 0; j< 1000; j++)
 	{
@@ -100,6 +100,9 @@ int main(int argc, char *argv[]){
 		p1.reset_states();
 
 	}
-	std::cout << "Number of wins: " << p1.wins << " out of 10000." << std::endl; 
+	std::cout << "Number of wins: " << p1.wins << " out of 1000." << std::endl; 
+	std::cout << std::endl;
+
+	
     return 0;
 }

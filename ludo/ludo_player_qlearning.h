@@ -11,6 +11,7 @@ class ludo_player_qlearning : public QObject {
     Q_OBJECT
 private:
     std::vector<int> pos_start_of_turn;
+    std::vector<int> pos_start_of_turn_orig;
     std::vector<int> pos_end_of_turn;
     int dice_roll;
     int make_decision();
@@ -20,7 +21,7 @@ private:
     fann_type discount_factor = 0.9;
     struct fann *q_approximator;
 
-    fann_type calc_reward();		
+    fann_type calc_reward(std::vector<fann_type> old_state, std::vector<fann_type> state, int old_pos, int new_pos, bool kill);		
 
 
 	// General representation
@@ -42,22 +43,50 @@ private:
     fann_type defender_next(int pos);	
     fann_type distance_to_finish_next(int pos);	
 
+    std::vector<fann_type> current_state_a0; 
+    std::vector<fann_type> current_state_a1; 
+    std::vector<fann_type> current_state_a2; 
+    std::vector<fann_type> current_state_a3; 
+
+    std::vector<fann_type> next_state_a0_a0;
+    std::vector<fann_type> next_state_a0_a1;
+    std::vector<fann_type> next_state_a0_a2;
+    std::vector<fann_type> next_state_a0_a3;
+
+    std::vector<fann_type> next_state_a1_a0;
+    std::vector<fann_type> next_state_a1_a1;
+    std::vector<fann_type> next_state_a1_a2;
+    std::vector<fann_type> next_state_a1_a3;
+
+    std::vector<fann_type> next_state_a2_a0;
+    std::vector<fann_type> next_state_a2_a1;
+    std::vector<fann_type> next_state_a2_a2;
+    std::vector<fann_type> next_state_a2_a3;
+
+    std::vector<fann_type> next_state_a3_a0;
+    std::vector<fann_type> next_state_a3_a1;
+    std::vector<fann_type> next_state_a3_a2;
+    std::vector<fann_type> next_state_a3_a3;
+
+   bool winning_a0;
+   bool winning_a1;
+   bool winning_a2;
+   bool winning_a3;
 
 
-    std::vector<fann_type> feature_values();
-	std::vector<fann_type> feature_values_next(int pos);
-    //std::vector<fann_type> feature_values(int pos);
-    std::vector<fann_type> state; 
-	std::vector<fann_type> old_state;
-	std::vector<int> old_pos;
+
+    void move_piece(int pos);
+    std::vector<fann_type> feature_values(int pos);
 	fann_type reward = 0;	
-	bool killed_player = false;
 
-	
-    fann_type old_qvalue;
+	bool win_game();
+
+
     fann_type q_approx(std::vector<fann_type> inputs);
     std::vector<int> possible_actions();
-    int find_best_action(std::vector<int> actions, fann_type &max);
+    int find_best_action(std::vector<int> actions, fann_type max_a0, fann_type max_a1, fann_type max_a2, fann_type max_a3);
+
+    fann_type max_q(fann_type a0, fann_type a1, fann_type a2, fann_type a3);
 
     bool die_next(int a_pos);		
     bool kill_next(int a_pos);		
@@ -65,6 +94,8 @@ private:
     int globe_pos(int a_pos);
     int friends_on_pos(int a_pos);
     int enemy_on_pos(int a_pos);
+
+	int decision;
 
 
     struct fann_train_data *training_data;

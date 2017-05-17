@@ -10,31 +10,10 @@ ludo_player_qlearning::ludo_player_qlearning():
 	input_data = new fann_type*[100000];
 	output_data = new fann_type*[100000];
 
-	old_state = std::vector<fann_type>(0);
-	old_pos = std::vector<int>(0);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-	state = std::vector<fann_type>(0);
-
-	// initial state setup
-	old_state.push_back(1);
-	old_state.push_back(0);
-	for(int i = 0; i< 4; i++)
-	{
-		old_state.push_back(1);
-		old_state.push_back(1);
-		old_state.push_back(0);
-		old_state.push_back(1);
-		old_state.push_back(1);
-		old_state.push_back(1);
-
-	}
 
 	training_data = new struct fann_train_data;
 	//training_data->num_data = 2;
-	training_data->num_input = 26;
+	training_data->num_input = 9;
 	training_data->num_output = 1;
 	training_data->input = input_data;
 	training_data->output = output_data;
@@ -45,7 +24,7 @@ ludo_player_qlearning::ludo_player_qlearning():
 	
 	for(int i = 0; i< 100000; i++)
 	{
-		input_data[i] = new fann_type[26];
+		input_data[i] = new fann_type[9];
 		output_data[i] = new fann_type[1];
 	}
 
@@ -55,38 +34,18 @@ ludo_player_qlearning::ludo_player_qlearning():
 
 void ludo_player_qlearning::reset_states()
 {
-	old_state = std::vector<fann_type>(0);
-	old_pos = std::vector<int>(0);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-	old_pos.push_back(-1);
-
-	// initial state setup
-	old_state.push_back(1);
-	old_state.push_back(0);
-	for(int i = 0; i< 4; i++)
-	{
-		old_state.push_back(1);
-		old_state.push_back(1);
-		old_state.push_back(0);
-		old_state.push_back(1);
-		old_state.push_back(1);
-		old_state.push_back(1);
-
-	}
-	//num_train_data = 0;
+	
 
 
 }
 
 void ludo_player_qlearning::create_new_neural_network()
 {
-	const unsigned int num_input = 26;
+	const unsigned int num_input = 9;
      	const unsigned int num_output = 1;
-  	const unsigned int num_layers = 4;
+  	const unsigned int num_layers = 3;
         const unsigned int num_neurons_hidden = 50;
-	q_approximator = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_neurons_hidden, num_output);
+	q_approximator = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
         
    	fann_set_activation_function_hidden(q_approximator, FANN_SIGMOID);	// try with FANN_SIGMOID_SYMMETRIC (tanh)
 	fann_set_activation_function_output(q_approximator, FANN_LINEAR);	// try with something linear
@@ -428,50 +387,31 @@ fann_type ludo_player_qlearning::num_finished()
 
 
 }
-/*
+
+
 std::vector<fann_type> ludo_player_qlearning::feature_values(int pos)
 {
-	std::vector<fann_type> res(7);
-	res.at(0) = is_home(pos);
-	res.at(1) = safe_now(pos);
-	res.at(2) = defender_now(pos);
-	res.at(3) = finish_area(pos);
-	res.at(4) = distance_to_finish_now(pos);
-	res.at(5) = distance_to_enemy_behind(pos);
-	res.at(6) = distance_to_enemy_front(pos);
-
-	return res;
-
-}*/
-
-std::vector<fann_type> ludo_player_qlearning::feature_values()
-{
 	std::vector<fann_type> res(0);
-	res.push_back(0);//num_home()/4.0);
-	res.push_back(0);//num_finished()/4.0);
-	for(int i = 0; i< 4; i++)
-	{
-		int a_pos = pos_start_of_turn[i];
-		res.push_back(is_home(a_pos));
-		res.push_back(0);//safe_now(a_pos));
-		//res.push_back(is_finished(a_pos));
-		res.push_back(0);//defender_now(a_pos, i, pos_start_of_turn));
-		res.push_back(0);//distance_to_finish_now(a_pos));
-		res.push_back(0);//distance_to_enemy_behind(a_pos));
-		res.push_back(distance_to_enemy_front(a_pos));
+	res.push_back(num_home()/4.0);
+	res.push_back(num_finished()/4.0);
 
+	int a_pos = pos_start_of_turn[pos];
+	res.push_back(is_home(a_pos));
+	res.push_back(is_finished(a_pos));
+	res.push_back(safe_now(a_pos));
+	res.push_back(defender_now(a_pos, pos, pos_start_of_turn));
+	res.push_back(distance_to_finish_now(a_pos));
+	res.push_back(distance_to_enemy_behind(a_pos));
+	res.push_back(distance_to_enemy_front(a_pos));
 
-	}
 
 	return res;
 
 
 }
 
-std::vector<fann_type> ludo_player_qlearning::feature_values_next(int pos)
+void ludo_player_qlearning::move_piece(int pos)
 {
-	std::vector<int> temp_pos = pos_start_of_turn;
-	std::vector<fann_type> new_features(0);
 	int new_pos = pos_next(pos, dice_roll);
 	if(die_next(new_pos))
 	{
@@ -493,11 +433,6 @@ std::vector<fann_type> ludo_player_qlearning::feature_values_next(int pos)
 		pos_start_of_turn[pos] = new_pos;
 	}
 
-	new_features = feature_values();
-
-	pos_start_of_turn = temp_pos;
-
-	return new_features;
 	
 
 
@@ -536,45 +471,9 @@ void ludo_player_qlearning::load_neural_network(std::string path)
 void ludo_player_qlearning::train_neural_network()
 {
 
-	/*// test training
-	for(int i = 0; i< 26; i++)
-	{
-		input_data[0][i] = 0.0;
-		input_data[1][i] = 1.0;
-		input_data[2][i] = 0.5;
-	}
-	output_data[0][0] = 1.0;
-	output_data[1][0] = 0.0;
-	output_data[2][0] = 0.5;
-
-
-	training_data->num_data = 3;
-
-	fann_train_on_data(q_approximator, training_data, 500000, 1000, 0.0000001);
-	
-	fann_type *calc_out;
-	fann_type input[26];
-	for(int i = 0; i<26; i++)
-	 	input[i] = 1.0;
-	calc_out = fann_run(q_approximator, input);
-	std::cout << "Test 1: " << calc_out[0] << std::endl;
-
-
-	for(int i = 0; i<26; i++)
-	 	input[i] = 0.0;
-	calc_out = fann_run(q_approximator, input);
-	std::cout << "Test 2: " << calc_out[0] << std::endl;
-
-
-	for(int i = 0; i<26; i++)
-	 	input[i] = 0.5;
-	calc_out = fann_run(q_approximator, input);
-	std::cout << "Test 3: " << calc_out[0] << std::endl;
-
-	std::cout << fann_test_data(q_approximator, training_data) <<  std::endl;
-*/	
+		
 	training_data->num_data = num_train_data;
-	//fann_train_on_data(q_approximator, training_data, 10000, 0, 0.00001);
+	//fann_train_on_data(q_approximator, training_data, 3000, 0, 0.00001);
 	fann_train_epoch(q_approximator, training_data);	
 	num_train_data = 0;
 	learning_rate = learning_rate*0.95;
@@ -584,11 +483,11 @@ void ludo_player_qlearning::train_neural_network()
 	
 }
 
-fann_type ludo_player_qlearning::calc_reward()
+fann_type ludo_player_qlearning::calc_reward(std::vector<fann_type> old_state, std::vector<fann_type> state, int old_pos, int new_pos, bool kill)
 {
 	int reward = 0;
 	// win is not included here
-	if(killed_player)
+	if(kill)
 		reward += 1;
 
 	for(int i = 0; i< 4; i++)
@@ -605,20 +504,20 @@ fann_type ludo_player_qlearning::calc_reward()
 			reward -= 0.5;
 		}
 
-		if(old_pos[i] >= 0 && pos_start_of_turn[i] == -1)
+		if(old_pos >= 0 && new_pos == -1)
 		{
 			//got killed
 			reward -= 2;
 
 		}
 
-		if(old_pos[i] == -1 && pos_start_of_turn[i] >= 0)
+		if(old_pos == -1 && new_pos >= 0)
 		{
 			// Move out
 			reward += 2;
 		}
 
-		if(old_pos[i] != 99 && pos_start_of_turn[i] == 99)
+		if(old_pos != 99 && new_pos == 99)
 		{
 			// Finished one piece
 			reward += 5;
@@ -630,26 +529,11 @@ fann_type ludo_player_qlearning::calc_reward()
 	return reward;
 }
 
-int ludo_player_qlearning::find_best_action(std::vector<int> actions, fann_type &max)
+int ludo_player_qlearning::find_best_action(std::vector<int> actions, fann_type max_a0, fann_type max_a1, fann_type max_a2, fann_type max_a3)
 {
-	int action = 0;
+	int action = -1;
 
-	for(int i = 0; i< actions.size(); i++)
-	{
-		std::vector<fann_type> input_vec = feature_values_next(actions.at(i));
-
-		fann_type q_value = q_approx(input_vec);
-		//std::cout << "Q_value for player: " << actions.at(i) << " is " << q_value << std::endl;
-		if(q_value > max)
-		{
-			
-			max = q_value;
-			action = actions.at(i);
-		}
-		
-
-
-	}
+	
 
 	return action;
 
@@ -658,9 +542,10 @@ int ludo_player_qlearning::find_best_action(std::vector<int> actions, fann_type 
 
 fann_type ludo_player_qlearning::q_approx(std::vector<fann_type> inputs)
 {
-	fann_type input[inputs.size()];
+	fann_type input[9];
 	//std::cout << "Inputs size: " << inputs.size() << std::endl;
-	for(int j = 0; j< inputs.size(); j++)
+	
+	for(int j = 0; j< inputs.size() ; j++)
 	{
 		input[j] = inputs.at(j);
 
@@ -674,75 +559,249 @@ fann_type ludo_player_qlearning::q_approx(std::vector<fann_type> inputs)
 	//delete[] q_value;
 	return res;
 
+}
+
+fann_type ludo_player_qlearning::max_q(fann_type a0, fann_type a1, fann_type a2, fann_type a3)
+{
+	fann_type max = -100000;
+
+	if(a0 > max)
+		max = a0;
+
+	if(a1 > max)
+		max = a1;
+
+	if(a2 > max)
+		max = a2;
+
+	if(a3 > max)
+		max = a3;
+
+	return max;
+
+
 }	
+
+bool ludo_player_qlearning::win_game()
+{
+	bool win = true;
+	for(int i = 0; i< 4; i++)
+	{
+		if(pos_start_of_turn[i] != 99)
+			win = false;
+
+	}
+
+	return win;
+
+}
 
 int ludo_player_qlearning::make_decision_qlearning()
 {
 
-	state = feature_values();
-	reward = calc_reward();
-	std::vector<int> pos_actions = possible_actions();
-	fann_type max = -1000000000;
-
 	//print_player_pos();
-	//std::cout << "Feature values for Player 1:" << std::endl;
-	//for(int i = 0; i< state.size(); i++)
-	//	std::cout << state.at(i) << std::endl;
-	//std::cout << std::endl;
 
-	//std::cout << "Reward is: " << reward << std::endl;
-	//std::cout << "Num Possible Action: " << pos_actions.size() << std::endl;
+	////////////
+	/////// Current State
+	////////////
+	current_state_a0 = feature_values(0);
+	current_state_a1 = feature_values(1);
+	current_state_a2 = feature_values(2);
+	current_state_a3 = feature_values(3);
 
-	int action = 0;
-	if(pos_actions.size() >0)
+	fann_type current_state_a0_Q = q_approx(current_state_a0);
+	fann_type current_state_a1_Q = q_approx(current_state_a1);
+	fann_type current_state_a2_Q = q_approx(current_state_a2);
+	fann_type current_state_a3_Q = q_approx(current_state_a3);
+
+
+					// Only do this while training??????
+	////////////
+	///////	Next State
+	////////////
+	pos_start_of_turn_orig = pos_start_of_turn;
+
+	// Try to move piece 0
+	move_piece(0);
+	winning_a0 = win_game();
+	next_state_a0_a0 = feature_values(0);
+	next_state_a0_a1 = feature_values(1);
+	next_state_a0_a2 = feature_values(2);
+	next_state_a0_a3 = feature_values(3);
+	pos_start_of_turn = pos_start_of_turn_orig;
+
+	// Try to move piece 1
+	move_piece(1);
+	winning_a1 = win_game();
+	next_state_a1_a0 = feature_values(0);
+	next_state_a1_a1 = feature_values(1);
+	next_state_a1_a2 = feature_values(2);
+	next_state_a1_a3 = feature_values(3);
+	pos_start_of_turn = pos_start_of_turn_orig;
+
+	// Try to move piece 1
+	move_piece(2);
+	winning_a2 = win_game();
+	next_state_a2_a0 = feature_values(0);
+	next_state_a2_a1 = feature_values(1);
+	next_state_a2_a2 = feature_values(2);
+	next_state_a2_a3 = feature_values(3);
+	pos_start_of_turn = pos_start_of_turn_orig;
+
+	// Try to move piece 1
+	move_piece(3);
+	winning_a3 = win_game();
+	next_state_a3_a0 = feature_values(0);
+	next_state_a3_a1 = feature_values(1);
+	next_state_a3_a2 = feature_values(2);
+	next_state_a3_a3 = feature_values(3);
+	pos_start_of_turn = pos_start_of_turn_orig;
+
+
+	// Find q values for piece 0
+	fann_type next_state_a0_a0_Q = q_approx(next_state_a0_a0);
+	fann_type next_state_a0_a1_Q = q_approx(next_state_a0_a1);
+	fann_type next_state_a0_a2_Q = q_approx(next_state_a0_a2);
+	fann_type next_state_a0_a3_Q = q_approx(next_state_a0_a3);
+
+	// Find q values for piece 1
+	fann_type next_state_a1_a0_Q = q_approx(next_state_a1_a0);
+	fann_type next_state_a1_a1_Q = q_approx(next_state_a1_a1);
+	fann_type next_state_a1_a2_Q = q_approx(next_state_a1_a2);
+	fann_type next_state_a1_a3_Q = q_approx(next_state_a1_a3);
+
+	// Find q values for piece 2
+	fann_type next_state_a2_a0_Q = q_approx(next_state_a2_a0);
+	fann_type next_state_a2_a1_Q = q_approx(next_state_a2_a1);
+	fann_type next_state_a2_a2_Q = q_approx(next_state_a2_a2);
+	fann_type next_state_a2_a3_Q = q_approx(next_state_a2_a3);
+
+	// Find q values for piece 3
+	fann_type next_state_a3_a0_Q = q_approx(next_state_a3_a0);
+	fann_type next_state_a3_a1_Q = q_approx(next_state_a3_a1);
+	fann_type next_state_a3_a2_Q = q_approx(next_state_a3_a2);
+	fann_type next_state_a3_a3_Q = q_approx(next_state_a3_a3);
+
+
+	// Find max for each piece
+	fann_type max_a0 = max_q(next_state_a0_a0_Q, next_state_a0_a1_Q, next_state_a0_a2_Q, next_state_a0_a3_Q);
+	fann_type max_a1 = max_q(next_state_a1_a0_Q, next_state_a1_a1_Q, next_state_a1_a2_Q, next_state_a1_a3_Q);
+	fann_type max_a2 = max_q(next_state_a2_a0_Q, next_state_a2_a1_Q, next_state_a2_a2_Q, next_state_a2_a3_Q);
+	fann_type max_a3 = max_q(next_state_a3_a0_Q, next_state_a3_a1_Q, next_state_a3_a2_Q, next_state_a3_a3_Q);
+
+	// Find the best action
+	std::vector<int> pos_actions = possible_actions();
+	int best_action = find_best_action(pos_actions, max_a0, max_a1, max_a2, max_a3);
+
+	if(best_action == -1)
 	{
-		action = find_best_action(pos_actions, max);
+		for(int i = 0; i< 4; i++)
+		{
+			if(pos_start_of_turn[i] == -1)
+				best_action = i;
+		}
+		return best_action;
 
-	
-		
+	}
+	else
+	{
+
 		if(training)
 		{
-			// General Q-learning rule
-			//fann_type q_old = q_approx(state);
-			//output_data[num_train_data][0] = q_old + learning_rate*(reward + discount_factor*max - q_old);
-
-
-			// Pac-man variant?
-		
-			output_data[num_train_data][0] = reward + discount_factor*max;
-
-
-
-			for(int i = 0; i< state.size(); i++)
+			if(best_action == 0)
 			{
-				input_data[num_train_data][i] = state.at(i);
+				if(winning_a0)
+					output_data[num_train_data][0] = reward + discount_factor*max_a0;
+				else
+					output_data[num_train_data][0] = 50;
+				output_data[num_train_data+1][0] = current_state_a1_Q;
+				output_data[num_train_data+2][0] = current_state_a2_Q;
+				output_data[num_train_data+3][0] = current_state_a3_Q;
+			}
+			else if(best_action == 1)
+			{
+				output_data[num_train_data][0] = current_state_a0_Q;
+				if(winning_a1)
+					output_data[num_train_data+1][0] = reward + discount_factor*max_a1;
+				else
+					output_data[num_train_data+1][0] = 50;
+				output_data[num_train_data+2][0] = current_state_a2_Q;
+				output_data[num_train_data+3][0] = current_state_a3_Q;
+			}
+			else if(best_action == 2)
+			{
+				output_data[num_train_data][0] = current_state_a0_Q;
+				output_data[num_train_data+1][0] = current_state_a1_Q;
+				if(winning_a2)
+					output_data[num_train_data+2][0] = reward + discount_factor*max_a2;
+				else
+					output_data[num_train_data+2][0] = 50;
+				output_data[num_train_data+3][0] = current_state_a3_Q;
+			}
+			else if(best_action == 3)
+			{
+				output_data[num_train_data][0] = current_state_a0_Q;
+				output_data[num_train_data+1][0] = current_state_a1_Q;
+				output_data[num_train_data+2][0] = current_state_a2_Q;
+				if(winning_a3)
+					output_data[num_train_data+3][0] = reward + discount_factor*max_a3;
+				else
+					output_data[num_train_data+3][0] = 50;
+			}
+
+			for(int i = 0; i< current_state_a0.size() ; i++)
+			{
+				input_data[num_train_data][i] = current_state_a0.at(i);
+				input_data[num_train_data+1][i] = current_state_a1.at(i);
+				input_data[num_train_data+2][i] = current_state_a2.at(i);
+				input_data[num_train_data+3][i] = current_state_a3.at(i);
 
 			}
-			num_train_data++;
+			num_train_data = num_train_data+4;
 
 
 			double exploration_activation = (double)(rand()%1000)/1000.0;
 			if(exploration_activation < exploring_rate)
 			{
 				int randnum = rand()%(pos_actions.size());
-				action = pos_actions.at(randnum);
+				best_action = pos_actions.at(randnum);
 
 			}
-		}
 
-		old_pos = pos_start_of_turn;
-		old_state = state;
+		}
+		
+		return best_action;
+
 
 
 
 	}
-	else
+	
+
+
+	
+	
+
+
+
+
+
+	int action = 0;
+	if(pos_actions.size() >0)
 	{
-		for(int i = 0; i< 4; i++)
+
+	
+		
+		if(training)
 		{
-			if(pos_start_of_turn[i] == -1)
-				action = i;
+		
+
+
+
+			
+
 		}
+
 	}
 
 	//std::cout << "Selected action: " << action << std::endl;
@@ -751,47 +810,11 @@ int ludo_player_qlearning::make_decision_qlearning()
 
 }
 
-int ludo_player_qlearning::make_decision(){
-	print_player_pos();
-	std::vector<fann_type> fv = feature_values();
-	//std::cout << "Feature values for Player 1:" << std::endl;
-	for(int i = 0; i< fv.size(); i++)
-		std::cout << fv.at(i) << std::endl;
-
-	std::cout << std::endl;
-
-
-
-    if(dice_roll == 6){
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]<0){
-                return i;
-            }
-        }
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
-                return i;
-            }
-        }
-    } else {
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
-                return i;
-            }
-        }
-        for(int i = 0; i < 4; ++i){ //maybe they are all locked in
-            if(pos_start_of_turn[i]<0){
-                return i;
-            }
-        }
-    }
-    return -1;
-}
 
 void ludo_player_qlearning::start_turn(positions_and_dice relative){
     pos_start_of_turn = relative.pos;
     dice_roll = relative.dice;
-    int decision = make_decision_qlearning();
+    decision = make_decision_qlearning();
     emit select_piece(decision);
 }
 
@@ -807,22 +830,6 @@ void ludo_player_qlearning::post_game_analysis(std::vector<int> relative_pos){
 	if(game_complete)
 	{
 		wins++;
-		if(training)
-		{
-			// won = reward of 10 in winning state
-			output_data[num_train_data][0] = 500;
-			std::vector<int> temp_pos = pos_start_of_turn;
-			pos_start_of_turn = pos_end_of_turn;
-			state = feature_values();
-			pos_start_of_turn = temp_pos;
-
-			for(int i = 0; i< state.size(); i++)
-			{
-				input_data[num_train_data][i] = state.at(i);
-
-			}
-			num_train_data++;
-		}
 
 	}
 
