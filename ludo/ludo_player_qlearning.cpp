@@ -32,12 +32,6 @@ ludo_player_qlearning::ludo_player_qlearning():
 
 }
 
-void ludo_player_qlearning::reset_states()
-{
-	
-
-
-}
 
 void ludo_player_qlearning::create_new_neural_network()
 {
@@ -410,15 +404,17 @@ std::vector<fann_type> ludo_player_qlearning::feature_values(int pos)
 
 }
 
-void ludo_player_qlearning::move_piece(int pos)
+void ludo_player_qlearning::move_piece(int pos, bool &kill)
 {
 	int new_pos = pos_next(pos, dice_roll);
+	kill = false;
 	if(die_next(new_pos))
 	{
 		pos_start_of_turn[pos] = -1;
 	}
 	else if(kill_next(new_pos))
 	{
+		kill = true;
 		for(int i = 4; i<16; i++)
 		{
 			if(pos_start_of_turn[i] == new_pos)
@@ -473,11 +469,11 @@ void ludo_player_qlearning::train_neural_network()
 
 		
 	training_data->num_data = num_train_data;
-	//fann_train_on_data(q_approximator, training_data, 3000, 0, 0.00001);
+	//fann_train_on_data(q_approximator, training_data, 5000, 1000, 0.01);
 	fann_train_epoch(q_approximator, training_data);	
 	num_train_data = 0;
-	learning_rate = learning_rate*0.95;
-	fann_set_learning_rate(q_approximator, learning_rate);
+	exploring_rate = exploring_rate*0.95;
+	//fann_set_learning_rate(q_approximator, learning_rate);
 	
 
 	
@@ -485,53 +481,106 @@ void ludo_player_qlearning::train_neural_network()
 
 fann_type ludo_player_qlearning::calc_reward(std::vector<fann_type> old_state, std::vector<fann_type> state, int old_pos, int new_pos, bool kill)
 {
-	int reward = 0;
+	int reward = -1;
 	// win is not included here
 	if(kill)
 		reward += 1;
 
-	for(int i = 0; i< 4; i++)
+
+	if(old_state[5] == 0 && state[5] >0)
 	{
-		if((old_state[4] == 0 && state[4] >0) || (old_state[10] == 0 && state[10] >0) || (old_state[16] == 0 && state[16] >0) || (old_state[22] == 0 && state[22] >0))
-		{
-			// Defend
-			reward += 0.5;
-		}
+		// Defend
+		reward += 0.5;
+	}
 
-		if((state[4] == 0 && old_state[4] >0) || (state[10] == 0 && old_state[10] >0) || (state[16] == 0 && old_state[16] >0) || (state[22] == 0 && old_state[22] >0))
-		{
-			//undefend
-			reward -= 0.5;
-		}
+	if(state[5] == 0 && old_state[5] >0)
+	{
+		//undefend
+		reward -= 0.5;
+	}
 
-		if(old_pos >= 0 && new_pos == -1)
-		{
-			//got killed
-			reward -= 2;
-
-		}
-
-		if(old_pos == -1 && new_pos >= 0)
-		{
-			// Move out
-			reward += 2;
-		}
-
-		if(old_pos != 99 && new_pos == 99)
-		{
-			// Finished one piece
-			reward += 5;
-		
-		}
+	if(old_pos >= 0 && new_pos == -1)
+	{
+		//got killed
+		reward -= 2;
 
 	}
+
+	if(old_pos == -1 && new_pos >= 0)
+	{
+		// Move out
+		reward += 2;
+	}
+
+	if(old_pos != 99 && new_pos == 99)
+	{
+		// Finished one piece
+		reward += 5;
+	
+	}
+
+
 
 	return reward;
 }
 
 int ludo_player_qlearning::find_best_action(std::vector<int> actions, fann_type max_a0, fann_type max_a1, fann_type max_a2, fann_type max_a3)
 {
+	fann_type max = -1000000000;
 	int action = -1;
+	for(int i = 0; i< actions.size(); i++)
+	{
+		int check = actions.at(i);
+		switch(check)
+		{
+			case 0:
+				if(max_a0 > max)
+				{
+					max = max_a0;
+					action = check;
+
+				}
+				break;
+
+			case 1:
+
+				if(max_a0 > max)
+				{
+					max = max_a0;
+					action = check;
+
+				}
+				break;
+
+			
+			case 2:
+
+				if(max_a0 > max)
+				{
+					max = max_a0;
+					action = check;
+
+				}
+				break;
+
+
+			case 3:
+
+				if(max_a0 > max)
+				{
+					max = max_a0;
+					action = check;
+
+				}
+				break;
+
+			default:
+				action = -1;
+				break;
+
+
+		}
+	}
 
 	
 
@@ -604,6 +653,8 @@ int ludo_player_qlearning::make_decision_qlearning()
 	////////////
 	/////// Current State
 	////////////
+
+	// calc feature values in s for all a
 	current_state_a0 = feature_values(0);
 	current_state_a1 = feature_values(1);
 	current_state_a2 = feature_values(2);
@@ -614,85 +665,30 @@ int ludo_player_qlearning::make_decision_qlearning()
 	fann_type current_state_a2_Q = q_approx(current_state_a2);
 	fann_type current_state_a3_Q = q_approx(current_state_a3);
 
-
-					// Only do this while training??????
-	////////////
-	///////	Next State
-	////////////
-	pos_start_of_turn_orig = pos_start_of_turn;
-
-	// Try to move piece 0
-	move_piece(0);
-	winning_a0 = win_game();
-	next_state_a0_a0 = feature_values(0);
-	next_state_a0_a1 = feature_values(1);
-	next_state_a0_a2 = feature_values(2);
-	next_state_a0_a3 = feature_values(3);
-	pos_start_of_turn = pos_start_of_turn_orig;
-
-	// Try to move piece 1
-	move_piece(1);
-	winning_a1 = win_game();
-	next_state_a1_a0 = feature_values(0);
-	next_state_a1_a1 = feature_values(1);
-	next_state_a1_a2 = feature_values(2);
-	next_state_a1_a3 = feature_values(3);
-	pos_start_of_turn = pos_start_of_turn_orig;
-
-	// Try to move piece 1
-	move_piece(2);
-	winning_a2 = win_game();
-	next_state_a2_a0 = feature_values(0);
-	next_state_a2_a1 = feature_values(1);
-	next_state_a2_a2 = feature_values(2);
-	next_state_a2_a3 = feature_values(3);
-	pos_start_of_turn = pos_start_of_turn_orig;
-
-	// Try to move piece 1
-	move_piece(3);
-	winning_a3 = win_game();
-	next_state_a3_a0 = feature_values(0);
-	next_state_a3_a1 = feature_values(1);
-	next_state_a3_a2 = feature_values(2);
-	next_state_a3_a3 = feature_values(3);
-	pos_start_of_turn = pos_start_of_turn_orig;
-
-
-	// Find q values for piece 0
-	fann_type next_state_a0_a0_Q = q_approx(next_state_a0_a0);
-	fann_type next_state_a0_a1_Q = q_approx(next_state_a0_a1);
-	fann_type next_state_a0_a2_Q = q_approx(next_state_a0_a2);
-	fann_type next_state_a0_a3_Q = q_approx(next_state_a0_a3);
-
-	// Find q values for piece 1
-	fann_type next_state_a1_a0_Q = q_approx(next_state_a1_a0);
-	fann_type next_state_a1_a1_Q = q_approx(next_state_a1_a1);
-	fann_type next_state_a1_a2_Q = q_approx(next_state_a1_a2);
-	fann_type next_state_a1_a3_Q = q_approx(next_state_a1_a3);
-
-	// Find q values for piece 2
-	fann_type next_state_a2_a0_Q = q_approx(next_state_a2_a0);
-	fann_type next_state_a2_a1_Q = q_approx(next_state_a2_a1);
-	fann_type next_state_a2_a2_Q = q_approx(next_state_a2_a2);
-	fann_type next_state_a2_a3_Q = q_approx(next_state_a2_a3);
-
-	// Find q values for piece 3
-	fann_type next_state_a3_a0_Q = q_approx(next_state_a3_a0);
-	fann_type next_state_a3_a1_Q = q_approx(next_state_a3_a1);
-	fann_type next_state_a3_a2_Q = q_approx(next_state_a3_a2);
-	fann_type next_state_a3_a3_Q = q_approx(next_state_a3_a3);
-
-
-	// Find max for each piece
-	fann_type max_a0 = max_q(next_state_a0_a0_Q, next_state_a0_a1_Q, next_state_a0_a2_Q, next_state_a0_a3_Q);
-	fann_type max_a1 = max_q(next_state_a1_a0_Q, next_state_a1_a1_Q, next_state_a1_a2_Q, next_state_a1_a3_Q);
-	fann_type max_a2 = max_q(next_state_a2_a0_Q, next_state_a2_a1_Q, next_state_a2_a2_Q, next_state_a2_a3_Q);
-	fann_type max_a3 = max_q(next_state_a3_a0_Q, next_state_a3_a1_Q, next_state_a3_a2_Q, next_state_a3_a3_Q);
+	if(DEBUG)
+	{
+		std::cout << "Q value for a0: " << current_state_a0_Q << std::endl;
+		std::cout << "Q value for a1: " << current_state_a1_Q << std::endl;
+		std::cout << "Q value for a2: " << current_state_a2_Q << std::endl;
+		std::cout << "Q value for a3: " << current_state_a3_Q << std::endl;
+	}
 
 	// Find the best action
 	std::vector<int> pos_actions = possible_actions();
-	int best_action = find_best_action(pos_actions, max_a0, max_a1, max_a2, max_a3);
+	int best_action = find_best_action(pos_actions, current_state_a0_Q, current_state_a1_Q, current_state_a2_Q, current_state_a3_Q);
 
+	if(DEBUG)
+	{
+		std::cout << "Possible actions: ";
+		for(int i = 0; i< pos_actions.size(); i++)
+		{
+			std::cout << pos_actions.at(i)  << " , "; 
+		}
+		std::cout << std::endl;
+	}
+
+
+	// if no possible actions -> return
 	if(best_action == -1)
 	{
 		for(int i = 0; i< 4; i++)
@@ -703,110 +699,138 @@ int ludo_player_qlearning::make_decision_qlearning()
 		return best_action;
 
 	}
-	else
+
+
+	// Only do update if training
+	if(training)
 	{
 
-		if(training)
+
+		// Add exploration
+		double exploration_activation = (double)(rand()%1000)/1000.0;
+		if(exploration_activation < exploring_rate)
 		{
-			if(best_action == 0)
+			int randnum = rand()%(pos_actions.size());
+			best_action = pos_actions.at(randnum);
+			if(DEBUG)
 			{
-				if(winning_a0)
-					output_data[num_train_data][0] = reward + discount_factor*max_a0;
-				else
-					output_data[num_train_data][0] = 50;
-				output_data[num_train_data+1][0] = current_state_a1_Q;
-				output_data[num_train_data+2][0] = current_state_a2_Q;
-				output_data[num_train_data+3][0] = current_state_a3_Q;
-			}
-			else if(best_action == 1)
-			{
-				output_data[num_train_data][0] = current_state_a0_Q;
-				if(winning_a1)
-					output_data[num_train_data+1][0] = reward + discount_factor*max_a1;
-				else
-					output_data[num_train_data+1][0] = 50;
-				output_data[num_train_data+2][0] = current_state_a2_Q;
-				output_data[num_train_data+3][0] = current_state_a3_Q;
-			}
-			else if(best_action == 2)
-			{
-				output_data[num_train_data][0] = current_state_a0_Q;
-				output_data[num_train_data+1][0] = current_state_a1_Q;
-				if(winning_a2)
-					output_data[num_train_data+2][0] = reward + discount_factor*max_a2;
-				else
-					output_data[num_train_data+2][0] = 50;
-				output_data[num_train_data+3][0] = current_state_a3_Q;
-			}
-			else if(best_action == 3)
-			{
-				output_data[num_train_data][0] = current_state_a0_Q;
-				output_data[num_train_data+1][0] = current_state_a1_Q;
-				output_data[num_train_data+2][0] = current_state_a2_Q;
-				if(winning_a3)
-					output_data[num_train_data+3][0] = reward + discount_factor*max_a3;
-				else
-					output_data[num_train_data+3][0] = 50;
-			}
-
-			for(int i = 0; i< current_state_a0.size() ; i++)
-			{
-				input_data[num_train_data][i] = current_state_a0.at(i);
-				input_data[num_train_data+1][i] = current_state_a1.at(i);
-				input_data[num_train_data+2][i] = current_state_a2.at(i);
-				input_data[num_train_data+3][i] = current_state_a3.at(i);
-
-			}
-			num_train_data = num_train_data+4;
-
-
-			double exploration_activation = (double)(rand()%1000)/1000.0;
-			if(exploration_activation < exploring_rate)
-			{
-				int randnum = rand()%(pos_actions.size());
-				best_action = pos_actions.at(randnum);
-
+				std::cout << "Did exploration!" << std::endl;
 			}
 
 		}
-		
-		return best_action;
 
-
-
-
-	}
-	
-
-
-	
-	
-
-
-
-
-
-	int action = 0;
-	if(pos_actions.size() >0)
-	{
-
-	
-		
-		if(training)
+		if(DEBUG)
 		{
-		
-
-
-
-			
-
+			std::cout << "Selected action: " << best_action << std::endl;
+			std::cout << std::endl;
 		}
 
+	
+
+	
+
+
+		////////////
+		///////	Next State
+		////////////
+
+		// Save current state of game
+		pos_start_of_turn_orig = pos_start_of_turn;
+
+		// Try to move the selected piece
+		bool killer;
+		move_piece(best_action, killer);
+		winning = win_game();
+
+		
+
+		// Calc feature values for s' for each a'
+		next_state_a0 = feature_values(0);
+		next_state_a1 = feature_values(1);
+		next_state_a2 = feature_values(2);
+		next_state_a3 = feature_values(3);
+
+		// Calc the reward
+		fann_type reward;
+		if(best_action == 0)
+			reward = calc_reward(current_state_a0, next_state_a0, pos_start_of_turn_orig[best_action], pos_start_of_turn[best_action], killer);
+		else if(best_action == 1)
+			reward = calc_reward(current_state_a1, next_state_a1, pos_start_of_turn_orig[best_action], pos_start_of_turn[best_action], killer);
+		else if(best_action == 2)
+			reward = calc_reward(current_state_a2, next_state_a2, pos_start_of_turn_orig[best_action], pos_start_of_turn[best_action], killer);
+		else if(best_action == 3)
+			reward = calc_reward(current_state_a3, next_state_a3, pos_start_of_turn_orig[best_action], pos_start_of_turn[best_action], killer);
+
+		// Reverse to current state of game
+		pos_start_of_turn = pos_start_of_turn_orig;
+
+
+		// Find q values for these features
+		fann_type next_state_a0_Q = q_approx(next_state_a0);
+		fann_type next_state_a1_Q = q_approx(next_state_a1);
+		fann_type next_state_a2_Q = q_approx(next_state_a2);
+		fann_type next_state_a3_Q = q_approx(next_state_a3);
+
+		// Find max
+		fann_type max_Qssaa = max_q(next_state_a0_Q, next_state_a1_Q, next_state_a2_Q, next_state_a3_Q);
+
+		//////////////////////////////////
+		// Update and add traning data	
+		/////////////////////////////////
+
+		// Add the input data for training
+		for(int i = 0; i< current_state_a0.size() ; i++)
+		{
+			input_data[num_train_data][i] = current_state_a0.at(i);
+			input_data[num_train_data+1][i] = current_state_a1.at(i);
+			input_data[num_train_data+2][i] = current_state_a2.at(i);
+			input_data[num_train_data+3][i] = current_state_a3.at(i);
+		}
+
+		// Add the output data
+		output_data[num_train_data][0] = current_state_a0_Q;
+		output_data[num_train_data+1][0] = current_state_a1_Q;
+		output_data[num_train_data+2][0] = current_state_a2_Q;
+		output_data[num_train_data+3][0] = current_state_a3_Q;
+
+		// Change the output data for the actual performed action
+		if(best_action == 0)
+		{
+			if(!winning)
+				output_data[num_train_data][0] = reward + discount_factor*max_Qssaa;
+			else
+				output_data[num_train_data][0] = 100;
+		}
+		else if(best_action == 1)
+		{
+			if(!winning)
+				output_data[num_train_data+1][0] = reward + discount_factor*max_Qssaa;
+			else
+				output_data[num_train_data+1][0] = 100;
+		}
+		else if(best_action == 2)
+		{
+			if(!winning)
+				output_data[num_train_data+2][0] = reward + discount_factor*max_Qssaa;
+			else
+				output_data[num_train_data+2][0] = 100;
+		}
+		else if(best_action == 3)
+		{
+			if(!winning)
+				output_data[num_train_data+3][0] = reward + discount_factor*max_Qssaa;
+			else
+				output_data[num_train_data+3][0] = 100;
+		}
+
+		num_train_data = num_train_data+4;
+
 	}
+	
 
 	//std::cout << "Selected action: " << action << std::endl;
 	//std::cout << std::endl;
-	return action;
+	return best_action;
 
 }
 

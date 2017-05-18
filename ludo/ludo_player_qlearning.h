@@ -6,18 +6,19 @@
 #include "positions_and_dice.h"
 #include "fann.h"
 
+#define DEBUG false
+
 
 class ludo_player_qlearning : public QObject {
     Q_OBJECT
-private:
+public:
     std::vector<int> pos_start_of_turn;
     std::vector<int> pos_start_of_turn_orig;
     std::vector<int> pos_end_of_turn;
     int dice_roll;
-    int make_decision();
-	int make_decision_qlearning();
-    fann_type learning_rate = 0.99;
-    fann_type exploring_rate = 0.1;
+    int make_decision_qlearning();
+    fann_type learning_rate = 0.01;
+    fann_type exploring_rate = 0.9;
     fann_type discount_factor = 0.9;
     struct fann *q_approximator;
 
@@ -48,36 +49,19 @@ private:
     std::vector<fann_type> current_state_a2; 
     std::vector<fann_type> current_state_a3; 
 
-    std::vector<fann_type> next_state_a0_a0;
-    std::vector<fann_type> next_state_a0_a1;
-    std::vector<fann_type> next_state_a0_a2;
-    std::vector<fann_type> next_state_a0_a3;
+    std::vector<fann_type> next_state_a0;
+    std::vector<fann_type> next_state_a1;
+    std::vector<fann_type> next_state_a2;
+    std::vector<fann_type> next_state_a3;
 
-    std::vector<fann_type> next_state_a1_a0;
-    std::vector<fann_type> next_state_a1_a1;
-    std::vector<fann_type> next_state_a1_a2;
-    std::vector<fann_type> next_state_a1_a3;
 
-    std::vector<fann_type> next_state_a2_a0;
-    std::vector<fann_type> next_state_a2_a1;
-    std::vector<fann_type> next_state_a2_a2;
-    std::vector<fann_type> next_state_a2_a3;
-
-    std::vector<fann_type> next_state_a3_a0;
-    std::vector<fann_type> next_state_a3_a1;
-    std::vector<fann_type> next_state_a3_a2;
-    std::vector<fann_type> next_state_a3_a3;
-
-   bool winning_a0;
-   bool winning_a1;
-   bool winning_a2;
-   bool winning_a3;
+   bool winning;
 
 
 
-    void move_piece(int pos);
+
+    void move_piece(int pos, bool &kill);
     std::vector<fann_type> feature_values(int pos);
-	fann_type reward = 0;	
 
 	bool win_game();
 
@@ -111,7 +95,6 @@ public:
     void load_neural_network(std::string path);
     void create_new_neural_network();
     void train_neural_network();
-    void reset_states();
 
     bool training = false;
     int wins = 0;

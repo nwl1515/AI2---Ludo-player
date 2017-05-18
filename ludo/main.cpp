@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 
 
     game g;
-    g.setGameDelay(00); //if you want to see the game, set a delay
+    g.setGameDelay(000); //if you want to see the game, set a delay
 
     /* Add a GUI <-- remove the '/' to uncomment block
     *Dialog w;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
     p1.create_new_neural_network();
 
 
-    for(int i = 0; i < 100; ++i)
+    for(int i = 0; i < 20000; ++i)
     {
 	p1.training = true;
 	for(int j = 0; j<50;j++)
@@ -73,10 +73,10 @@ int main(int argc, char *argv[]){
 
 		g.reset();
 		if(g.wait()){}
-		p1.reset_states();
+		p1.exploring_rate = 0.9;
 	}
 	p1.train_neural_network();
-	std::cout << "Training: " << i+1 << " complete out of 1000" << std::endl;
+	std::cout << "Training: " << i+1 << " complete out of 20000" << std::endl;
 
 	
 	
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
 	
      }
 
-p1.wins = 0;
+	p1.wins = 0;
 	p1.training = false;
 	for(int j = 0; j< 1000; j++)
 	{
@@ -97,11 +97,12 @@ p1.wins = 0;
 		}
 		g.reset();
 		if(g.wait()){}
-		p1.reset_states();
 
 	}
 	std::cout << "Number of wins: " << p1.wins << " out of 1000." << std::endl; 
 	std::cout << std::endl;
+
+	
 
 	
     return 0;
