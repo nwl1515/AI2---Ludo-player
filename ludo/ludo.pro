@@ -17,17 +17,17 @@ SOURCES += main.cpp\
     game.cpp \
     ludo_player.cpp \
     ludo_player_random.cpp \
-    ludo_player_qlearning.cpp \
+    ludo_player_ga.cpp \
 
 HEADERS  += dialog.h \
     game.h \
     ludo_player.h \
     positions_and_dice.h \
     ludo_player_random.h \
-    ludo_player_qlearning.h \
+    ludo_player_ga.h \
 
 FORMS    += dialog.ui
 
-LIBS += -L/usr/local/lib -lfann
+LIBS += -L/usr/local/lib -lfann -lfloatfann
 
 QMAKE_CXXFLAGS += -std=c++11 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wunused

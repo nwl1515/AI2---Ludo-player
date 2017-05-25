@@ -4,7 +4,7 @@
 #include <vector>
 #include "ludo_player.h"
 #include "ludo_player_random.h"
-#include "ludo_player_qlearning.h"
+#include "ludo_player_ga.h"
 #include "positions_and_dice.h"
 
 Q_DECLARE_METATYPE( positions_and_dice )
@@ -16,12 +16,12 @@ int main(int argc, char *argv[]){
     //instanciate the players here
     ludo_player p2;
     ludo_player p3, p4;
-    ludo_player_qlearning p1;
+    ludo_player_ga p1;
    
 
 
     game g;
-    g.setGameDelay(000); //if you want to see the game, set a delay
+    g.setGameDelay(0); //if you want to see the game, set a delay
 
     /* Add a GUI <-- remove the '/' to uncomment block
     *Dialog w;
@@ -56,38 +56,24 @@ int main(int argc, char *argv[]){
     QObject::connect(&g, SIGNAL(player4_end(std::vector<int>)),    &p4,SLOT(post_game_analysis(std::vector<int>)));
     QObject::connect(&p4,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
 
+
     p1.create_new_neural_network();
+    p1.init_pool();
+
+	 std::ofstream f("data2.txt");
 
 
-    for(int i = 0; i < 20000; ++i)
+// Run for 10 generations
+for(int k = 0; k< 2000; k++) 
+{
+
+    // Find fitness values for each individual
+    for(int i = 0; i< POPULATION_SIZE; i++)
     {
-	p1.training = true;
-	for(int j = 0; j<50;j++)
-	{        
-		g.start();
-		a.exec();
-		while (a.closingDown())
-		{
-			std::cout << "Closing Down" << std::endl;
-		}
-
-		g.reset();
-		if(g.wait()){}
-		p1.exploring_rate = 0.9;
-	}
-	p1.train_neural_network();
-	std::cout << "Training: " << i+1 << " complete out of 20000" << std::endl;
-
-	
-	
-		
-	
-	
-     }
-
+	p1.set_individual(i);
 	p1.wins = 0;
-	p1.training = false;
-	for(int j = 0; j< 1000; j++)
+	// Test each individual for 500 games
+	for(int j = 0; j< 200; j++)
 	{
 		g.start();
 		a.exec();
@@ -95,12 +81,38 @@ int main(int argc, char *argv[]){
 		{
 			std::cout << "Closing Down" << std::endl;
 		}
+
+		p1.update_scores();
 		g.reset();
 		if(g.wait()){}
 
 	}
-	std::cout << "Number of wins: " << p1.wins << " out of 1000." << std::endl; 
+	//std::cout << "Num home: " << p1.home << std::endl;
+	//std::cout << "Num Finished: " <<  p1.finished << std::endl;
+	//std::cout << "Num won: " << p1.wins << std::endl;
+        p1.population.at(i).fitness = p1.calc_fitness()/200.0;
+    }	
+	//p1.extra_chance();
+	p1.sort_individuals();
+	std::cout << "Best fitness after " << k << " Generations is " << std::endl;
+	//for(int w = 0; w < p1.population.size(); w++) 
+		std::cout << p1.population.at(0).fitness << std::endl;
+	if(!f.fail())
+	{
+		f << k << '\t' << p1.population.at(0).fitness << std::endl;
+
+	}
 	std::cout << std::endl;
+	p1.new_generation();
+}		
+	f.close();
+	//p1.sort_individuals();
+	//for(int i = 0; i< 25; i++)
+	//	std::cout << "Fitness value for individual " << i << " = " << p1.population.at(i).fitness << std::endl;
+	
+	
+
+	
 
 	
 
