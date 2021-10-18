@@ -8,7 +8,7 @@ University of Southern Denmark
 Using LUDO GUI framework created by
 Nikolaj Iversen, Nicolai Lynnerup
 
-Creating a Ludo player using Q-learning with a neural network as q approximator.
+Creating a Ludo player using a Genetic Algorithm, trained against other AI ludo players.
 
 
 
